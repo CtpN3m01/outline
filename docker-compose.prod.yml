@@ -1,0 +1,42 @@
+services:
+  outline:
+    image: outlinewiki/outline:latest
+    env_file: .env.production
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - outline-data:/var/lib/outline/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: outline
+      POSTGRES_PASSWORD: outline_db_pass
+      POSTGRES_DB: outline
+    volumes:
+      - outline-postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "outline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  outline-data:
+  outline-postgres:
